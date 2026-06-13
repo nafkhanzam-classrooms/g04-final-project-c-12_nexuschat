@@ -2,8 +2,8 @@ import socket
 import threading
 import json
 import sys
-#from shared.crypto import encrypt_message
-#from shared.crypto import decrypt_message
+from shared.crypto import encrypt_message
+from shared.crypto import decrypt_message
 
 HOST = "127.0.0.1"
 PORT = 9090
