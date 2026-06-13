@@ -11,8 +11,15 @@ from server.room_manager import (
     handle_leave_room,
     handle_list_rooms,
 )
-from server.message_handler import handle_broadcast, handle_private_msg
 
+from server.message_handler import (
+    handle_broadcast,
+    handle_private_msg,
+    handle_send_file,
+    handle_send_private_file,
+    handle_download_file,
+    handle_react_message
+)
 HOST        = "127.0.0.1"
 PORT        = 9090
 BUFFER_SIZE = 4096
@@ -27,8 +34,12 @@ ACTION_HANDLERS = {
     Action.BROADCAST:   handle_broadcast,
     Action.PRIVATE_MSG: handle_private_msg,
     Action.LIST_USERS:  handle_list_users,
-}
+    Action.SEND_FILE: handle_send_file,
+    Action.SEND_PRIVATE_FILE: handle_send_private_file,
+    Action.DOWNLOAD_FILE: handle_download_file,
+    Action.REACT_MESSAGE: handle_react_message,
 
+}
 
 # ─── Per-Client Thread ────────────────────────────────────────────────────────
 
@@ -71,6 +82,7 @@ def client_thread(conn: socket.socket, addr):
                     continue
 
                 action  = msg.get("action", "").upper()
+                print("ACTION =", action)
                 payload = msg.get("payload", {})
 
                 if username is None:
