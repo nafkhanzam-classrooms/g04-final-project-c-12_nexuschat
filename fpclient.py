@@ -2,8 +2,8 @@ import socket
 import threading
 import json
 import sys
-from shared.crypto import encrypt_message
-from shared.crypto import decrypt_message
+#from shared.crypto import encrypt_message
+#from shared.crypto import decrypt_message
 
 HOST = "127.0.0.1"
 PORT = 9090
@@ -23,9 +23,7 @@ def deserialize(raw: str) -> dict:
 # ─── Pretty Printer ───────────────────────────────────────────────────────────
 
 def print_response(data: dict):
-    """Tampilkan respon dari server dengan format yang mudah dibaca."""
     action = data.get("action", "")
-    status = data.get("status", "")
 
     if action == "room_list":
         rooms = data.get("rooms", [])
@@ -41,37 +39,11 @@ def print_response(data: dict):
         print(f"{'─'*40}\n")
         return
 
-    if action == "user_list":
-        users = data.get("users", [])
-
-        print(f"\n{'─'*40}")
-        print(f"  User Online ({data.get('total', 0)} user)")
-        print(f"{'─'*40}")
-
-        if not users:
-            print("  (Tidak ada user online)")
-        else:
-            for user in users:
-                print(f"  • {user}")
-
-        print(f"{'─'*40}\n")
-        return
-
     if action == "joined_room":
         members = ", ".join(data.get("members", []))
         print(f"\n  {data.get('message')}")
         print(f"     Members saat ini: {members}\n")
         return
-
-    if action == "broadcast":
-        encrypted = data.get("content", "")
-
-        try:
-            content = decrypt_message(encrypted)
-        except Exception:
-            content = encrypted
-
-        print(f"[{data['sender']}] {content}")
 
     msg = data.get("message", json.dumps(data))
     print(f"\n{msg}\n")
@@ -80,7 +52,6 @@ def print_response(data: dict):
 # ─── Background Receiver ──────────────────────────────────────────────────────
 
 def receiver_thread(sock: socket.socket):
-    """Terima pesan dari server di thread terpisah (non-blocking input)."""
     buffer = ""
     try:
         while True:
@@ -95,7 +66,6 @@ def receiver_thread(sock: socket.socket):
                     try:
                         data = deserialize(line)
                         print_response(data)
-                        # Cetak ulang prompt agar tidak mengganggu input user
                         print(">> ", end="", flush=True)
                     except json.JSONDecodeError:
                         print(f"  [Respon tidak valid: {line}]")
@@ -107,27 +77,22 @@ def receiver_thread(sock: socket.socket):
 
 def print_help():
     print("""
-╔═════════════════════════════════════════════════╗
-║           Perintah yang tersedia                ║
-╠═════════════════════════════════════════════════╣
-║  /create  <nama_room>     Buat room baru        ║
-║  /join    <nama_room>     Masuk ke room         ║
-║  /msg     <room> <pesan>  Kirim pesan ke room   ║
-║  /pm      <user> <pesan>  Kirim pesan pribadi   ║
-║  /leave   <nama_room>     Keluar dari room      ║
-║  /list                    Lihat semua room      ║
-║  /user                    Lihat user online     ║
-║  /help                    Tampilkan bantuan     ║
-║  /quit                    Keluar dari program   ║
-╚═════════════════════════════════════════════════╝
+╔══════════════════════════════════════════════╗
+║           Perintah yang tersedia             ║
+╠══════════════════════════════════════════════╣
+║  /create  <nama_room>   Buat room baru       ║
+║  /join    <nama_room>   Masuk ke room        ║
+║  /leave   <nama_room>   Keluar dari room     ║
+║  /list                  Lihat semua room     ║
+║  /msg  <room> <pesan>   Kirim pesan ke room  ║
+║  /pm   <user> <pesan>   Pesan private        ║
+║  /help                  Tampilkan bantuan    ║
+║  /quit                  Keluar dari program  ║
+╚══════════════════════════════════════════════╝
 """)
 
 
 def parse_and_send(sock: socket.socket, line: str) -> bool:
-    """
-    Parse input user, buat pesan JSON, kirim ke server.
-    Return False jika user ingin keluar.
-    """
     parts = line.strip().split(maxsplit=1)
     if not parts:
         return True
@@ -144,7 +109,7 @@ def parse_and_send(sock: socket.socket, line: str) -> bool:
 
     elif cmd == "/create":
         if not arg:
-            print(" Penggunaan: /create <nama_room>")
+            print("Penggunaan: /create <nama_room>")
         else:
             sock.sendall(serialize({"action": "CREATE_ROOM", "payload": {"room_name": arg}}))
 
@@ -155,33 +120,23 @@ def parse_and_send(sock: socket.socket, line: str) -> bool:
             sock.sendall(serialize({"action": "JOIN_ROOM", "payload": {"room_name": arg}}))
 
     elif cmd == "/leave":
-        # Boleh tanpa argumen — server akan pakai room aktif
         sock.sendall(serialize({"action": "LEAVE_ROOM", "payload": {"room_name": arg}}))
 
     elif cmd == "/list":
         sock.sendall(serialize({"action": "LIST_ROOMS", "payload": {}}))
 
-    elif cmd == "/user":
-        sock.sendall(serialize({
-            "action": "LIST_USERS",
-            "payload": {}
-        }))
-
     elif cmd == "/msg":
-        # Format: /msg <room> <pesan>
         parts2 = arg.split(maxsplit=1)
         if len(parts2) < 2:
             print("Penggunaan: /msg <nama_room> <pesan>")
         else:
             room, content = parts2[0], parts2[1]
-            encrypted = encrypt_message(content)
             sock.sendall(serialize({
-                "action": "BROADCAST",
-                "payload": { "room_name": room, "content": encrypted}
+                "action":  "BROADCAST",
+                "payload": {"room_name": room, "content": content}
             }))
-        
+
     elif cmd == "/pm":
-        # Format: /pm <username> <pesan>
         parts2 = arg.split(maxsplit=1)
         if len(parts2) < 2:
             print("Penggunaan: /pm <username> <pesan>")
@@ -190,7 +145,6 @@ def parse_and_send(sock: socket.socket, line: str) -> bool:
             sock.sendall(serialize({
                 "action":  "PRIVATE_MSG",
                 "payload": {"recipient": recipient, "content": content}
-            
             }))
 
     else:
@@ -198,6 +152,47 @@ def parse_and_send(sock: socket.socket, line: str) -> bool:
 
     return True
 
+# ─── Authenticate ─────────────────────────────────────────────────────────────────────
+def authenticate(sock):
+    # Baca pesan sambutan dari server dulu
+    sock.recv(BUFFER_SIZE)  # buang pesan "Terhubung ke server..."
+    
+    while True:
+        print("\n  1. Login")
+        print("  2. Register")
+
+        pilihan = input("  Pilih (1/2): ").strip()
+        username = input("  Username: ").strip()
+        password = input("  Password: ").strip()
+
+        if not username or not password:
+            print("Username dan password tidak boleh kosong.")
+            continue
+
+        action = "REGISTER" if pilihan == "2" else "LOGIN"
+
+        sock.sendall(serialize({
+            "action": action,
+            "payload": {
+                "username": username,
+                "password": password
+            }
+        }))
+
+        # Baca response
+        response = sock.recv(BUFFER_SIZE).decode("utf-8")
+        for line in response.split("\n"):
+            if not line.strip():
+                continue
+            try:
+                data = deserialize(line)
+                print(f"\n{data.get('message')}")
+                if data.get("status") == "ok":
+                    return  # ← langsung keluar, tidak kirim apapun lagi
+            except Exception:
+                pass
+
+        print("Silakan coba lagi.\n")
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
 
@@ -214,22 +209,14 @@ def main():
         print(f"Tidak bisa terhubung ke {HOST}:{PORT}. Pastikan server sudah berjalan.")
         sys.exit(1)
 
-    # Minta username
-    username = input("  Masukkan username: ").strip()
-    if not username:
-        print("Username tidak boleh kosong.")
-        sock.close()
-        sys.exit(1)
+    authenticate(sock)
 
-    # Kirim LOGIN
-    sock.sendall(serialize({"action": "LOGIN", "payload": {"username": username}}))
-
-    # Mulai thread penerima
-    t = threading.Thread(target=receiver_thread, args=(sock,), daemon=True)
+    t = threading.Thread(
+        target=receiver_thread,
+        args=(sock,),
+        daemon=True
+    )
     t.start()
-
-    import time
-    time.sleep(0.3)  # Beri waktu server merespon login
 
     print_help()
 
@@ -238,12 +225,16 @@ def main():
             line = input(">> ").strip()
             if not line:
                 continue
+
             if not parse_and_send(sock, line):
                 break
+
     except (KeyboardInterrupt, EOFError):
         print("\n  Menutup koneksi...")
         try:
-            sock.sendall(serialize({"action": "LOGOUT", "payload": {}}))
+            sock.sendall(
+                serialize({"action": "LOGOUT", "payload": {}})
+            )
         except Exception:
             pass
 
