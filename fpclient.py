@@ -2,6 +2,11 @@ import socket
 import threading
 import json
 import sys
+import os
+import base64
+import mimetypes
+
+MESSAGE_CACHE = {}
 
 HOST = "127.0.0.1"
 PORT = 9090
@@ -67,13 +72,23 @@ def print_response(data: dict):
         print()
         return
 
-    # ── chat message (broadcast) ───────────────────────────────────────────────
+    # ── chat message (broadcast) ───────────────────────────────────────────────    
     if action == "new_message":
-        sender    = data.get("sender", "?")
-        room      = data.get("room", "")
-        content   = data.get("message", "")
+
+        message_id = data.get("message_id")
+        sender = data.get("sender", "?")
+        room = data.get("room", "")
+        content = data.get("message", "")
         timestamp = data.get("timestamp", "")
-        print(f"\n  [{timestamp}] [{room}] {sender}: {content}\n")
+
+        MESSAGE_CACHE[message_id] = data
+
+        print(
+            f"\n#{message_id} "
+            f"[{timestamp}] "
+            f"[{room}] "
+            f"{sender}: {content}\n"
+        )
         return
 
     # ── private message ────────────────────────────────────────────────────────
@@ -82,11 +97,66 @@ def print_response(data: dict):
         content   = data.get("message", "")
         timestamp = data.get("timestamp", "")
         print(f"\n  [{timestamp}] (DM dari {sender}): {content}\n")
+
+        print(
+            f"\n📎 FILE #{data.get('file_id')}"
+            f"\nPengirim : {data.get('sender')}"
+            f"\nNama     : {data.get('filename')}"
+            f"\nUkuran   : {data.get('filesize')} byte"
+            f"\nTipe     : {data.get('filetype')}\n"
+        )
         return
 
     # ── user joined / left room ────────────────────────────────────────────────
     if action in ("user_joined", "user_left"):
         print(f"\n  *** {data.get('message', '')} ***\n")
+        return
+
+    # ── file ────────────────────────────────────────────────
+    if action == "file_message":
+
+        print(
+            f"\n📎 FILE #{data.get('file_id')}"
+            f"\nPengirim : {data.get('sender')}"
+            f"\nNama     : {data.get('filename')}"
+            f"\nUkuran   : {data.get('filesize')} byte"
+            f"\nTipe     : {data.get('filetype')}\n"
+        )
+
+        return
+    
+    # ── reaction ────────────────────────────────────────────────
+    if action == "reaction_update":
+
+        message_id = data.get("message_id")
+        reactions = data.get("reactions", {})
+
+        text = " ".join(
+            f"{emoji} {count}"
+            for emoji, count in reactions.items()
+        )
+
+        print(
+            f"\nPesan #{message_id} "
+            f"mendapat reaction: {text}\n"
+        )
+        return
+
+    # ── file download ────────────────────────────────────────────────
+    if action == "file_download":
+
+        filename = data["filename"]
+        filedata = data["filedata"]
+
+        save_dir = "downloads"
+        os.makedirs(save_dir, exist_ok=True)
+
+        filepath = os.path.join(save_dir, filename)
+
+        with open(filepath, "wb") as f:
+            f.write(base64.b64decode(filedata))
+
+        print(f"\nFile disimpan ke {filepath}\n")
         return
 
     # ── fallback ───────────────────────────────────────────────────────────────
@@ -134,6 +204,10 @@ def print_help():
 ║  /user                  Lihat user online    ║
 ║  /help                  Tampilkan bantuan    ║
 ║  /quit                  Keluar dari program  ║
+║  /sendfile <room> <path>                     ║
+║  /sendfilepm <user> <path>                   ║
+║  /react <message_id> <emoji>                 ║
+║  /download <file_id>                         ║
 ╚══════════════════════════════════════════════╝
 """)
 
@@ -196,6 +270,127 @@ def parse_and_send(sock: socket.socket, line: str) -> bool:
                 "action":  "PRIVATE_MSG",
                 "payload": {"recipient": recipient, "content": content}
             }))
+
+    elif cmd == "/sendfile":
+
+        parts2 = arg.split(maxsplit=1)
+
+        if len(parts2) < 2:
+            print(
+                "Penggunaan: "
+                "/sendfile <room> <path_file>"
+            )
+
+        else:
+
+            room_name, filepath = parts2
+
+            try:
+
+                with open(filepath, "rb") as f:
+                    content = f.read()
+
+                encoded = base64.b64encode(
+                    content
+                ).decode()
+
+                mime_type, _ = mimetypes.guess_type(
+                    filepath
+                )
+
+                sock.sendall(
+                    serialize({
+                        "action": "SEND_FILE",
+                        "payload": {
+                            "room_name": room_name,
+                            "filename": os.path.basename(filepath),
+                            "filetype": mime_type,
+                            "filesize": len(content),
+                            "filedata": encoded
+                        }
+                    })
+                )
+
+            except Exception as e:
+                print(
+                    f"Gagal mengirim file: {e}"
+                )
+
+    elif cmd == "/sendfilepm":
+
+        parts2 = arg.split(maxsplit=1)
+
+        if len(parts2) < 2:
+            print("Penggunaan: /sendfilepm <user> <path>")
+        else:
+
+            recipient, filepath = parts2
+
+            try:
+                with open(filepath, "rb") as f:
+                    content = f.read()
+
+                encoded = base64.b64encode(content).decode()
+
+                mime_type, _ = mimetypes.guess_type(filepath)
+
+                sock.sendall(
+                    serialize({
+                        "action": "SEND_PRIVATE_FILE",
+                        "payload": {
+                            "recipient": recipient,
+                            "filename": os.path.basename(filepath),
+                            "filetype": mime_type,
+                            "filesize": len(content),
+                            "filedata": encoded
+                        }
+                    })
+                )
+
+            except Exception as e:
+                print(f"Gagal mengirim file: {e}")
+
+    elif cmd == "/react":
+
+        parts2 = arg.split(maxsplit=1)
+
+        if len(parts2) < 2:
+            print(
+                "Penggunaan: "
+                "/react <message_id> <emoji>"
+            )
+
+        else:
+
+            message_id = int(parts2[0])
+            reaction = parts2[1]
+
+            sock.sendall(
+                serialize({
+                    "action": "REACT_MESSAGE",
+                    "payload": {
+                        "message_id": message_id,
+                        "reaction": reaction
+                    }
+                })
+            )
+
+    elif cmd == "/download":
+
+        try:
+            file_id = int(arg)
+
+            sock.sendall(
+                serialize({
+                    "action": "DOWNLOAD_FILE",
+                    "payload": {
+                        "file_id": file_id
+                    }
+                })
+            )
+
+        except ValueError:
+            print("File ID harus berupa angka.")
 
     else:
         print(f"  Perintah '{cmd}' tidak dikenal. Ketik /help untuk bantuan.")
