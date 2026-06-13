@@ -11,7 +11,7 @@ from server import state
  
 logger = logging.getLogger("AuthManager")
  
- 
+  
 # ─── Login ────────────────────────────────────────────────────────────────────
  
 def handle_login(conn: socket.socket, addr, payload: dict) -> str | None:

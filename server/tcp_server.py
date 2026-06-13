@@ -146,4 +146,4 @@ def start_server():
         logger.info("Server dihentikan oleh user (Ctrl+C).")
     finally:
         server_sock.close()
-        logger.info("Server socket ditutup.")
+        logger.info("Server socket ditutup.") 
