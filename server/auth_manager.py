@@ -9,6 +9,7 @@ from shared.protocol import (
     now_full,
 )
 from server import state
+from server.database import save_user, get_user
 
 logger = logging.getLogger("AuthManager")
 
@@ -74,12 +75,10 @@ def handle_register(conn: socket.socket, addr, payload: dict) -> str | None:
         conn.sendall(serialize(error(err)))
         return None
 
-    with state.registered_users_lock:
-        if username in state.registered_users:
-            conn.sendall(serialize(error(f"Username '{username}' sudah terdaftar.")))
-            return None
-
-        state.registered_users[username] = _hash_password(password)
+# ─── ini yang aku ubah ────────────────────────────────────────────────────────────────────
+#        save_user(username, _hash_password(password))
+#        user = get_user(username) 
+# ─── ini yang aku ubah ────────────────────────────────────────────────────────────────────
 
     with state.clients_lock:
         state.clients[username] = {
@@ -122,11 +121,6 @@ def handle_login(conn: socket.socket, addr, payload: dict) -> str | None:
     if not password:
         conn.sendall(serialize(error("Password tidak boleh kosong.")))
         return None
-
-    with state.registered_users_lock:
-        if username not in state.registered_users:
-            conn.sendall(serialize(error(f"Username '{username}' belum terdaftar. Silakan register dulu.")))
-            return None
 
         if state.registered_users[username] != _hash_password(password):
             conn.sendall(serialize(error("Password salah.")))
