@@ -17,7 +17,13 @@ class Action:
     BROADCAST   = "BROADCAST"      
     PRIVATE_MSG = "PRIVATE_MSG"    
 
-    LIST_USERS  = "LIST_USERS"      
+    LIST_USERS  = "LIST_USERS"  
+
+    SEND_FILE = "SEND_FILE"
+    SEND_PRIVATE_FILE = "SEND_PRIVATE_FILE"
+    DOWNLOAD_FILE = "DOWNLOAD_FILE" 
+
+    REACT_MESSAGE = "REACT_MESSAGE"   
 
 # ─── Server Response Action Constants ────────────────────────────────────────
 
@@ -35,7 +41,12 @@ class Event:
     NEW_MESSAGE     = "new_message"     
     PRIVATE_MESSAGE = "private_message" 
 
-    USER_LIST       = "user_list"       
+    USER_LIST       = "user_list"  
+
+    SEND_FILE = "SEND_FILE"
+    SEND_PRIVATE_FILE = "SEND_PRIVATE_FILE"
+    DOWNLOAD_FILE = "DOWNLOAD_FILE"
+    REACT_MESSAGE = "REACT_MESSAGE"
 
 
 # ─── Status Constants ─────────────────────────────────────────────────────────
@@ -114,6 +125,53 @@ def make_private_message(sender: str, recipient: str, content: str) -> dict:
         timestamp = now(),
     )
 
+def make_file_message(
+    sender: str,
+    room: str,
+    file_id: int,
+    filename: str,
+    filesize: int,
+    filetype: str
+):
+    return info(
+        action=Event.FILE_MESSAGE,
+        sender=sender,
+        room=room,
+        file_id=file_id,
+        filename=filename,
+        filesize=filesize,
+        filetype=filetype,
+        timestamp=now(),
+    )
+
+def make_private_file(
+    sender: str,
+    recipient: str,
+    file_id: int,
+    filename: str,
+    filesize: int,
+    filetype: str
+):
+    return info(
+        action=Event.PRIVATE_FILE,
+        sender=sender,
+        recipient=recipient,
+        file_id=file_id,
+        filename=filename,
+        filesize=filesize,
+        filetype=filetype,
+        timestamp=now(),
+    )
+
+def make_reaction_update(
+    message_id: int,
+    reactions: dict
+):
+    return info(
+        action=Event.REACTION_UPDATE,
+        message_id=message_id,
+        reactions=reactions
+    )
 
 # ─── Request Builders ─────────────────────────────────────────────────────────
 
@@ -150,3 +208,51 @@ def req_register(username: str, password: str) -> dict:
 
 def req_login_with_password(username: str, password: str) -> dict:
     return req(Action.LOGIN, username=username, password=password)
+
+def req_send_file(
+    room_name: str,
+    filename: str,
+    filetype: str,
+    filesize: int,
+    filedata: str
+):
+    return req(
+        Action.SEND_FILE,
+        room_name=room_name,
+        filename=filename,
+        filetype=filetype,
+        filesize=filesize,
+        filedata=filedata
+    )
+
+def req_send_private_file(
+    recipient: str,
+    filename: str,
+    filetype: str,
+    filesize: int,
+    filedata: str
+):
+    return req(
+        Action.SEND_PRIVATE_FILE,
+        recipient=recipient,
+        filename=filename,
+        filetype=filetype,
+        filesize=filesize,
+        filedata=filedata
+    )
+
+def req_download_file(file_id: int):
+    return req(
+        Action.DOWNLOAD_FILE,
+        file_id=file_id
+    )
+
+def req_react_message(
+    message_id: int,
+    reaction: str
+):
+    return req(
+        Action.REACT_MESSAGE,
+        message_id=message_id,
+        reaction=reaction
+    )
