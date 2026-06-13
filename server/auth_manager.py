@@ -9,7 +9,6 @@ from shared.protocol import (
     now_full,
 )
 from server import state
-from server.database import save_user, get_user
 
 logger = logging.getLogger("AuthManager")
 
@@ -75,10 +74,16 @@ def handle_register(conn: socket.socket, addr, payload: dict) -> str | None:
         conn.sendall(serialize(error(err)))
         return None
 
-# ─── ini yang aku ubah ────────────────────────────────────────────────────────────────────
-#        save_user(username, _hash_password(password))
-#        user = get_user(username) 
-# ─── ini yang aku ubah ────────────────────────────────────────────────────────────────────
+    # FIX: persist the user into registered_users so login works later
+    with state.registered_users_lock:
+        if username in state.registered_users:
+            conn.sendall(serialize(error(f"Username '{username}' sudah terdaftar.")))
+            return None
+        state.registered_users[username] = _hash_password(password)
+
+    if state.is_online(username):
+        conn.sendall(serialize(error(f"'{username}' sudah login di tempat lain.")))
+        return None
 
     with state.clients_lock:
         state.clients[username] = {
@@ -122,6 +127,11 @@ def handle_login(conn: socket.socket, addr, payload: dict) -> str | None:
         conn.sendall(serialize(error("Password tidak boleh kosong.")))
         return None
 
+    # FIX: indentation was broken — this block was unreachable before
+    with state.registered_users_lock:
+        if username not in state.registered_users:
+            conn.sendall(serialize(error(f"Username '{username}' belum terdaftar.")))
+            return None
         if state.registered_users[username] != _hash_password(password):
             conn.sendall(serialize(error("Password salah.")))
             return None
