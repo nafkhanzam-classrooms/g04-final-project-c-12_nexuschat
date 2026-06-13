@@ -75,3 +75,42 @@ def set_client_room(username: str, room_name: str | None):
 
 registered_users: dict[str, str] = {}
 registered_users_lock = threading.Lock()
+
+messages = {}
+messages_lock = threading.Lock()
+
+message_counter = 1
+message_counter_lock = threading.Lock()
+
+
+def next_message_id():
+    global message_counter
+
+    with message_counter_lock:
+        current = message_counter
+        message_counter += 1
+        return current
+    
+files = {}
+files_lock = threading.Lock()
+
+file_counter = 1
+file_counter_lock = threading.Lock()
+
+
+def next_file_id():
+    global file_counter
+
+    with file_counter_lock:
+        current = file_counter
+        file_counter += 1
+        return current
+    
+private_files = {}
+private_files_lock = threading.Lock()
+
+import os
+
+UPLOAD_DIR = "uploads"
+
+os.makedirs(UPLOAD_DIR, exist_ok=True)
