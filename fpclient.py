@@ -2,6 +2,8 @@ import socket
 import threading
 import json
 import sys
+from shared.crypto import encrypt_message
+from shared.crypto import decrypt_message
 
 HOST = "127.0.0.1"
 PORT = 9090
@@ -39,11 +41,37 @@ def print_response(data: dict):
         print(f"{'─'*40}\n")
         return
 
+    if action == "user_list":
+        users = data.get("users", [])
+
+        print(f"\n{'─'*40}")
+        print(f"  User Online ({data.get('total', 0)} user)")
+        print(f"{'─'*40}")
+
+        if not users:
+            print("  (Tidak ada user online)")
+        else:
+            for user in users:
+                print(f"  • {user}")
+
+        print(f"{'─'*40}\n")
+        return
+
     if action == "joined_room":
         members = ", ".join(data.get("members", []))
         print(f"\n  {data.get('message')}")
         print(f"     Members saat ini: {members}\n")
         return
+
+    if action == "broadcast":
+        encrypted = data.get("content", "")
+
+        try:
+            content = decrypt_message(encrypted)
+        except Exception:
+            content = encrypted
+
+        print(f"[{data['sender']}] {content}")
 
     msg = data.get("message", json.dumps(data))
     print(f"\n{msg}\n")
@@ -79,16 +107,19 @@ def receiver_thread(sock: socket.socket):
 
 def print_help():
     print("""
-╔══════════════════════════════════════════════╗
-║           Perintah yang tersedia             ║
-╠══════════════════════════════════════════════╣
-║  /create  <nama_room>   Buat room baru       ║
-║  /join    <nama_room>   Masuk ke room        ║
-║  /leave   <nama_room>   Keluar dari room     ║
-║  /list                  Lihat semua room     ║
-║  /help                  Tampilkan bantuan    ║
-║  /quit                  Keluar dari program  ║
-╚══════════════════════════════════════════════╝
+╔═════════════════════════════════════════════════╗
+║           Perintah yang tersedia                ║
+╠═════════════════════════════════════════════════╣
+║  /create  <nama_room>     Buat room baru        ║
+║  /join    <nama_room>     Masuk ke room         ║
+║  /msg     <room> <pesan>  Kirim pesan ke room   ║
+║  /pm      <user> <pesan>  Kirim pesan pribadi   ║
+║  /leave   <nama_room>     Keluar dari room      ║
+║  /list                    Lihat semua room      ║
+║  /user                    Lihat user online     ║
+║  /help                    Tampilkan bantuan     ║
+║  /quit                    Keluar dari program   ║
+╚═════════════════════════════════════════════════╝
 """)
 
 
@@ -129,7 +160,13 @@ def parse_and_send(sock: socket.socket, line: str) -> bool:
 
     elif cmd == "/list":
         sock.sendall(serialize({"action": "LIST_ROOMS", "payload": {}}))
-    
+
+    elif cmd == "/user":
+        sock.sendall(serialize({
+            "action": "LIST_USERS",
+            "payload": {}
+        }))
+
     elif cmd == "/msg":
         # Format: /msg <room> <pesan>
         parts2 = arg.split(maxsplit=1)
@@ -137,9 +174,10 @@ def parse_and_send(sock: socket.socket, line: str) -> bool:
             print("Penggunaan: /msg <nama_room> <pesan>")
         else:
             room, content = parts2[0], parts2[1]
+            encrypted = encrypt_message(content)
             sock.sendall(serialize({
-                "action":  "BROADCAST",
-                "payload": {"room_name": room, "content": content}
+                "action": "BROADCAST",
+                "payload": { "room_name": room, "content": encrypted}
             }))
         
     elif cmd == "/pm":
