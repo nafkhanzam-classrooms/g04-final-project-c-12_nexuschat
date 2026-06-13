@@ -22,7 +22,7 @@ logger = logging.getLogger("TCPServer")
 ACTION_HANDLERS = {
     Action.CREATE_ROOM: handle_create_room,
     Action.JOIN_ROOM:   handle_join_room,
-    Action.LEAVE_ROOM:  handle_leave_room,
+    Action.LEAVE_ROOM:  handle_leave_room,   # FIX: removed dangling "Action." line
     Action.LIST_ROOMS:  handle_list_rooms,
     Action.BROADCAST:   handle_broadcast,
     Action.PRIVATE_MSG: handle_private_msg,
@@ -37,7 +37,7 @@ def client_thread(conn: socket.socket, addr):
     Thread untuk menangani satu client dari awal sampai disconnect.
 
     Alur:
-        1. Tunggu pesan LOGIN
+        1. Tunggu pesan LOGIN / REGISTER
         2. Setelah login, routing action ke handler yang sesuai
         3. Saat disconnect, cleanup otomatis
     """
@@ -87,7 +87,7 @@ def client_thread(conn: socket.socket, addr):
                         "status":  "ok",
                         "message": "Sampai jumpa! 👋",
                     }))
-                    return  
+                    return
 
                 handler = ACTION_HANDLERS.get(action)
                 if handler:
