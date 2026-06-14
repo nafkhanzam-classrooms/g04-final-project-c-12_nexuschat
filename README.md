@@ -173,20 +173,20 @@ Mendukung komunikasi dua arah secara terus-menerus.
 
 ### Daftar Perintah
 
-/create <room>              | Membuat room baru
-/join <room>	              | Bergabung ke room
-/leave <room>	              | Keluar dari room
-/list	                      | Melihat daftar room
-/msg <room> <pesan>	        | Mengirim pesan ke room
-/pm <user> <pesan>	        | Mengirim pesan pribadi
-/user	                      | Melihat pengguna online
-/sendfile <room> <path>	    | Mengirim file ke room
-/sendfilepm <user> <path>	  | Mengirim file pribadi
-/download <file_id>	        |  Mengunduh file
-/react <message_id> <emoji> | Memberi reaksi pada pesan
-/history <room>	            | Melihat riwayat room
-/history dm <user>	        | Melihat riwayat DM
-/help	                      | Menampilkan bantuan
-/quit	                      | Keluar dari aplikasi
+| /create <room>              | Membuat room baru            |
+| /join <room>	              | Bergabung ke room            |
+| /leave <room>	              | Keluar dari room             |
+| /list	                      | Melihat daftar room          |
+| /msg <room> <pesan>	        | Mengirim pesan ke room       |
+| /pm <user> <pesan>	        | Mengirim pesan pribadi       |
+| /user	                      | Melihat pengguna online      |
+| /sendfile <room> <path>	    | Mengirim file ke room        |
+| /sendfilepm <user> <path>	  | Mengirim file pribadi        |
+| /download <file_id>	        |  Mengunduh file              |
+| /react <message_id> <emoji> | Memberi reaksi pada pesan    |
+| /history <room>	            | Melihat riwayat room         |
+| /history dm <user>	        | Melihat riwayat DM           |
+| /help	                      | Menampilkan bantuan          |
+| /quit	                      | Keluar dari aplikasi         |
 
 ## Screenshot Hasil
