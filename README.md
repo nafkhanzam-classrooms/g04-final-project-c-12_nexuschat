@@ -10,7 +10,7 @@
 ## Link Youtube (Unlisted)
 Link ditaruh di bawah ini
 ```
-https://its.id/ m/2026FPprogjarK12
+https://its.id/m/2026FPprogjarK12
 ```
 
 ## Penjelasan Program
