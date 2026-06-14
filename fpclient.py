@@ -5,12 +5,12 @@ import sys
 import os
 import base64
 import mimetypes
-
-MESSAGE_CACHE = {}
+from shared.crypto import encrypt_message, decrypt_message
 
 HOST = "127.0.0.1"
 PORT = 9090
 BUFFER_SIZE = 4096
+MESSAGE_CACHE = {}
 
 
 # ─── Serialization Helpers ────────────────────────────────────────────────────
@@ -58,19 +58,18 @@ def print_response(data: dict):
 
     # ── join room ──────────────────────────────────────────────────────────────
     if action == "joined_room":
-        members = ", ".join(data.get("members", []))
-        print(f"\n  {data.get('message')}")
-        print(f"     Members saat ini: {members}")
+            members = ", ".join(data.get("members", []))
+            print(f"\n  {data.get('message')}")
+            print(f"     Members saat ini: {members}\n")
 
-        # Tampilkan history pesan kalau ada
-        history = data.get("history", [])
-        if history:
-            print(f"\n  ── Riwayat pesan terakhir ──")
-            for entry in history:
-                print(f"  [{entry.get('timestamp','')}] {entry.get('sender','?')}: {entry.get('content','')}")
-            print(f"  ────────────────────────────")
-        print()
-        return
+            history = data.get("history", [])  
+            if history:
+                print(f"\n  ── Riwayat pesan terakhir ──")
+                for entry in history:
+                    print(f"  [{entry.get('timestamp','')}] {entry.get('sender','?')}: {entry.get('content','')}")
+                print(f"  ────────────────────────────")
+            print()
+            return 
 
     # ── chat message (broadcast) ───────────────────────────────────────────────    
     if action == "new_message":
@@ -96,15 +95,22 @@ def print_response(data: dict):
         sender    = data.get("sender", "?")
         content   = data.get("message", "")
         timestamp = data.get("timestamp", "")
-        print(f"\n  [{timestamp}] (DM dari {sender}): {content}\n")
 
-        print(
-            f"\n📎 FILE #{data.get('file_id')}"
-            f"\nPengirim : {data.get('sender')}"
-            f"\nNama     : {data.get('filename')}"
-            f"\nUkuran   : {data.get('filesize')} byte"
-            f"\nTipe     : {data.get('filetype')}\n"
-        )
+        try:                           
+            content = decrypt_message(content)
+        except Exception:
+            pass
+
+        print(f"\n  [{timestamp}] (DM dari {sender}): {content}\n")  
+
+        if data.get("file_id"):
+            print(
+                f"\n📎 FILE #{data.get('file_id')}"
+                f"\nPengirim : {data.get('sender')}"
+                f"\nNama     : {data.get('filename')}"
+                f"\nUkuran   : {data.get('filesize')} byte"
+                f"\nTipe     : {data.get('filetype')}\n"
+            )
         return
 
     # ── user joined / left room ────────────────────────────────────────────────
@@ -208,6 +214,8 @@ def print_help():
 ║  /sendfilepm <user> <path>                   ║
 ║  /react <message_id> <emoji>                 ║
 ║  /download <file_id>                         ║
+║  /history <nama_room>   History chat room    ║
+║  /history dm <user>     History chat DM      ║
 ╚══════════════════════════════════════════════╝
 """)
 
@@ -229,13 +237,13 @@ def parse_and_send(sock: socket.socket, line: str) -> bool:
 
     elif cmd == "/create":
         if not arg:
-            print("  Penggunaan: /create <nama_room>")
+            print("Penggunaan: /create <nama_room>")
         else:
             sock.sendall(serialize({"action": "CREATE_ROOM", "payload": {"room_name": arg}}))
 
     elif cmd == "/join":
         if not arg:
-            print("  Penggunaan: /join <nama_room>")
+            print("Penggunaan: /join <nama_room>")
         else:
             sock.sendall(serialize({"action": "JOIN_ROOM", "payload": {"room_name": arg}}))
 
@@ -246,24 +254,23 @@ def parse_and_send(sock: socket.socket, line: str) -> bool:
         sock.sendall(serialize({"action": "LIST_ROOMS", "payload": {}}))
 
     elif cmd == "/user":
-        # FIX: was "/user" → "LIST_USERS" mapping, now wired correctly
         sock.sendall(serialize({"action": "LIST_USERS", "payload": {}}))
 
     elif cmd == "/msg":
         parts2 = arg.split(maxsplit=1)
         if len(parts2) < 2:
-            print("  Penggunaan: /msg <nama_room> <pesan>")
+            print("Penggunaan: /msg <nama_room> <pesan>")
         else:
             room, content = parts2[0], parts2[1]
             sock.sendall(serialize({
-                "action": "BROADCAST",
+                "action":  "BROADCAST",
                 "payload": {"room_name": room, "content": content}
             }))
 
     elif cmd == "/pm":
         parts2 = arg.split(maxsplit=1)
         if len(parts2) < 2:
-            print("  Penggunaan: /pm <username> <pesan>")
+            print("Penggunaan: /pm <username> <pesan>")
         else:
             recipient, content = parts2[0], parts2[1]
             sock.sendall(serialize({
@@ -391,29 +398,44 @@ def parse_and_send(sock: socket.socket, line: str) -> bool:
 
         except ValueError:
             print("File ID harus berupa angka.")
+            
+    elif cmd == "/history":
+        parts2 = arg.split(maxsplit=1)
+        if not parts2:
+            print("Penggunaan: /history <room> atau /history dm <username>")
+        elif parts2[0] == "dm":
+            if len(parts2) < 2:
+                print("Penggunaan: /history dm <username>")  # ← tambah 4 spasi
+            else:
+                sock.sendall(serialize({
+                    "action": "GET_DM_HISTORY",
+                    "payload": {"recipient": parts2[1]}
+                }))
+        else:
+            sock.sendall(serialize({
+                "action": "GET_ROOM_HISTORY",
+                "payload": {"room_name": parts2[0]}
+            }))
 
     else:
-        print(f"  Perintah '{cmd}' tidak dikenal. Ketik /help untuk bantuan.")
+        print(f"Perintah '{cmd}' tidak dikenal. Ketik /help untuk bantuan.")
 
     return True
 
-
-# ─── Authenticate ─────────────────────────────────────────────────────────────
-
+# ─── Authenticate ─────────────────────────────────────────────────────────────────────
 def authenticate(sock):
-    # Buang pesan sambutan dari server
-    sock.recv(BUFFER_SIZE)
-
+    sock.recv(BUFFER_SIZE)  
+    
     while True:
         print("\n  1. Login")
         print("  2. Register")
 
-        pilihan  = input("  Pilih (1/2): ").strip()
-        username = input("  Username   : ").strip()
-        password = input("  Password   : ").strip()
+        pilihan = input("  Pilih (1/2): ").strip()
+        username = input("  Username: ").strip()
+        password = input("  Password: ").strip()
 
         if not username or not password:
-            print("  Username dan password tidak boleh kosong.")
+            print("Username dan password tidak boleh kosong.")
             continue
 
         action = "REGISTER" if pilihan == "2" else "LOGIN"
@@ -422,7 +444,7 @@ def authenticate(sock):
             "action": action,
             "payload": {
                 "username": username,
-                "password": password,
+                "password": password
             }
         }))
 
@@ -432,14 +454,13 @@ def authenticate(sock):
                 continue
             try:
                 data = deserialize(line)
-                print(f"\n  {data.get('message')}")
+                print(f"\n{data.get('message')}")
                 if data.get("status") == "ok":
-                    return
+                    return  
             except Exception:
                 pass
 
-        print("  Silakan coba lagi.\n")
-
+        print("Silakan coba lagi.\n")
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
 
@@ -451,14 +472,18 @@ def main():
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect((HOST, PORT))
-        print(f"  Terhubung ke server {HOST}:{PORT}\n")
+        print(f"Terhubung ke server {HOST}:{PORT}\n")
     except ConnectionRefusedError:
-        print(f"  Tidak bisa terhubung ke {HOST}:{PORT}. Pastikan server sudah berjalan.")
+        print(f"Tidak bisa terhubung ke {HOST}:{PORT}. Pastikan server sudah berjalan.")
         sys.exit(1)
 
     authenticate(sock)
 
-    t = threading.Thread(target=receiver_thread, args=(sock,), daemon=True)
+    t = threading.Thread(
+        target=receiver_thread,
+        args=(sock,),
+        daemon=True
+    )
     t.start()
 
     print_help()
@@ -468,13 +493,16 @@ def main():
             line = input(">> ").strip()
             if not line:
                 continue
+
             if not parse_and_send(sock, line):
                 break
 
     except (KeyboardInterrupt, EOFError):
         print("\n  Menutup koneksi...")
         try:
-            sock.sendall(serialize({"action": "LOGOUT", "payload": {}}))
+            sock.sendall(
+                serialize({"action": "LOGOUT", "payload": {}})
+            )
         except Exception:
             pass
 
