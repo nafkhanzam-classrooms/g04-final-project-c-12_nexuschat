@@ -76,7 +76,7 @@ Reaksi pesan
 
 ### Fitur Utama
 
-Autentikasi Pengguna
+#### Autentikasi Pengguna
 
 Setiap pengguna harus memiliki akun untuk menggunakan sistem.
 ```
@@ -87,7 +87,7 @@ Login pengguna
 Identifikasi pengguna secara unik
 ```
 
-Multi Room Chat
+#### Multi Room Chat
 
 Pengguna dapat membuat dan bergabung ke berbagai room diskusi.
 ```
@@ -100,11 +100,11 @@ Melihat daftar room yang tersedia
 Melihat anggota yang berada di dalam room
 ```
 
-Pesan Grup (Broadcast Message)
+#### Pesan Grup (Broadcast Message)
 
 Memungkinkan pengguna mengirim pesan ke seluruh anggota room secara real-time.
 
-Pesan Pribadi (Direct Message)
+#### Pesan Pribadi (Direct Message)
 
 Pengguna dapat berkomunikasi secara langsung dengan pengguna lain tanpa melalui room.
 ```
@@ -114,11 +114,11 @@ Komunikasi satu lawan satu
 Pesan dienkripsi sebelum dikirim
 ```
 
-Daftar Pengguna Online
+#### Daftar Pengguna Online
 
 Menampilkan seluruh pengguna yang sedang terhubung ke server.
 
-Pengiriman File ke Room
+#### Pengiriman File ke Room
 
 Memungkinkan pengguna membagikan file kepada seluruh anggota room.
 ```
@@ -130,15 +130,15 @@ Tipe file
 ID file
 ```
 
-Pengiriman File Pribadi
+#### Pengiriman File Pribadi
 
 Mengirim file langsung kepada pengguna tertentu.
 
-Download File
+#### Download File
 
 Setiap file yang dikirim memiliki ID unik yang dapat digunakan untuk mengunduh file kembali.
 
-Reaksi Emoji pada Pesan
+#### Reaksi Emoji pada Pesan
 
 Pengguna dapat memberikan reaksi emoji pada pesan tertentu.
 ```
@@ -149,11 +149,11 @@ Menghitung jumlah reaksi
 Menampilkan update reaksi secara real-time
 ```
 
-Riwayat Percakapan (Chat History)
+#### Riwayat Percakapan (Chat History)
 
 Pesan yang tersimpan dalam database dapat diakses kembali kapan saja.
 
-Notifikasi Aktivitas Pengguna
+#### Notifikasi Aktivitas Pengguna
 
 Server secara otomatis mengirimkan notifikasi ketika:
 ```
@@ -161,7 +161,7 @@ Pengguna masuk ke room
 Pengguna keluar dari room
 ```
 
-Komunikasi Real-Time Berbasis TCP Socket
+#### Komunikasi Real-Time Berbasis TCP Socket
 
 NexusChat menggunakan koneksi TCP Socket yang persisten sehingga:
 ```
