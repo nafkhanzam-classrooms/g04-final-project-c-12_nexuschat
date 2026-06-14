@@ -193,3 +193,21 @@ Mendukung komunikasi dua arah secara terus-menerus.
 | /quit	                      | Keluar dari aplikasi         |
 
 ## Screenshot Hasil
+
+<img width="637" height="415" alt="Screenshot 2026-06-14 164947" src="https://github.com/user-attachments/assets/f002f3a1-e2bb-4d76-b97c-a280073a4b43" />
+
+<img width="419" height="366" alt="Screenshot 2026-06-14 164824" src="https://github.com/user-attachments/assets/05f8d7cb-06b8-4d4c-b834-44f6b0f1e6c5" />
+
+<img width="857" height="253" alt="Screenshot 2026-06-14 164747" src="https://github.com/user-attachments/assets/851efd49-42e9-4a75-8eec-18b0e8eef686" />
+
+<img width="770" height="194" alt="Screenshot 2026-06-14 164714" src="https://github.com/user-attachments/assets/d2d6df26-b6c7-41b0-b668-5cb3005042cb" />
+
+<img width="790" height="240" alt="Screenshot 2026-06-14 164653" src="https://github.com/user-attachments/assets/88e71f9a-ca2d-4c7d-abc3-d815af39c74d" />
+
+<img width="797" height="178" alt="Screenshot 2026-06-14 164621" src="https://github.com/user-attachments/assets/9c58f370-619b-4fd7-bbc6-b1d2c70c5df5" />
+
+<img width="783" height="412" alt="Screenshot 2026-06-14 164529" src="https://github.com/user-attachments/assets/83d0c354-258a-4e4b-9da6-903851fc4931" />
+
+<img width="763" height="408" alt="Screenshot 2026-06-14 164517" src="https://github.com/user-attachments/assets/4d24cd6c-75fa-4c8a-81f0-a3dec68b6f0e" />
+
+<img width="697" height="394" alt="Screenshot 2026-06-14 164436" src="https://github.com/user-attachments/assets/613f393e-530d-4144-8763-66d77ae6f7e8" />
