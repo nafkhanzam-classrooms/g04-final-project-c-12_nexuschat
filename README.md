@@ -173,6 +173,8 @@ Mendukung komunikasi dua arah secara terus-menerus.
 
 ### Daftar Perintah
 
+| Perintah                    | Fungsi                       | 
+| ---                         | ---                          | 
 | /create <room>              | Membuat room baru            |
 | /join <room>	              | Bergabung ke room            |
 | /leave <room>	              | Keluar dari room             |
